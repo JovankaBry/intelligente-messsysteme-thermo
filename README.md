@@ -15,6 +15,7 @@ Wir entwickeln das **thermische Messmodul** für eine modulare Sensorplattform: 
 | Ordner | Inhalt |
 |---|---|
 | `docs/` | Lastenheft, Zusammenfassungen, Präsentationen (am besten als PDF) |
+| `3D/` | 3D .STL / .STEP Datei |
 | `hardware/` | Schaltpläne, PCB-Exporte (PDF, Gerber), Stückliste |
 | `measurements/` | Messdaten, Fotos, Diagramme |
 | `research/` | Notizen zu Sensoren, ADC, Heizer und thermischen Durchflussmessern in der Industrie |
