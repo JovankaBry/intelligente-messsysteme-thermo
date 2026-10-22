@@ -1,0 +1,14 @@
+# OS and editor files
+desktop.ini
+Thumbs.db
+.DS_Store
+~$*
+*.tmp
+
+# Secrets
+*.env
+personal_token.ini
+
+# Python
+__pycache__/
+*.pyc
