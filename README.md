@@ -28,6 +28,10 @@ Alle Skizzen sind Entwürfe und nicht maßstäblich. Details sind noch offen.
 
 ![Temp- und Heizer-Scheibe](docs/abbildungen/temp-und-heizer-scheibe.png)
 
+**Sensoranordnung:** Scheibenblöcke mit Lücken am Rohr.
+
+![Sensoranordnung](docs/abbildungen/sensoranordnung-option-a.png)
+
 ## Heizer
 
 **Aufgabe:** Ohne Heizer gibt es keinen Messeffekt, weil das Wasser überall die gleiche Temperatur hat. Der Heizer erzeugt die Temperaturdifferenz, die der Sensor messen kann.
