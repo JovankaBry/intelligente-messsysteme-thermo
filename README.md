@@ -8,7 +8,7 @@ Wir entwickeln das **thermische Messmodul** für eine modulare Sensorplattform: 
 
 - **Ziel:** Den Durchfluss in einer dünnen Glaskapillare messen, auch ohne Luftblasen im Wasser.
 - **Prinzip:** Ein Heizer erwärmt das Wasser leicht (ca. 1 K). Ein Temperatursensor vor und einer nach dem Heizer messen die Temperatur außen am Rohr. Aus der Temperaturdifferenz folgt der Durchfluss, abgeglichen mit einer Waage.
-- **Aufbau:** Ein Stapel runder Leiterplatten-Scheiben auf dem Rohr. Die Sensoren sitzen außen auf den Endscheiben, in der Mitte sitzt der Heizer (Widerstandsdraht oder Via).
+- **Aufbau:** Ein Stapel runder Leiterplatten-Scheiben auf dem Rohr. Die Sensoren sitzen außen auf den Endscheiben, in der Mitte sitzt der Heizer (Widerstandsdraht).
 - **Sensoren:** Digitale Temperatursensoren über I²C (**TMP1075**, Entscheidung 2026-10-29). Eine IMU ist nicht nötig, weil Erschütterungen die Temperaturmessung nicht beeinflussen.
 - **Stand:** Entwurf. Viele Punkte sind noch offen, siehe Lastenheft.
 
@@ -27,6 +27,32 @@ Alle Skizzen sind Entwürfe und nicht maßstäblich. Details sind noch offen.
 **Temp- und Heizer-Scheibe:** Unsere Scheiben für das thermische Modul.
 
 ![Temp- und Heizer-Scheibe](docs/abbildungen/temp-und-heizer-scheibe.png)
+
+## Heizer
+
+**Aufgabe:** Der Heizer erwärmt das Wasser leicht (ca. 1 K). Ohne Heizer gibt es keinen Messeffekt, weil das Wasser überall die gleiche Temperatur hat. Das Wasser trägt die Wärme zum zweiten Sensor, und die Temperaturdifferenz zeigt den Durchfluss.
+
+**Ausführung:** Lackierter Widerstandsdraht, eng auf die Glaskapillare gewickelt. Eine Via scheidet aus, weil Kupfer zu wenig Widerstand hat.
+
+| Größe | Wert |
+|---|---|
+| Versorgung | 3,3 V (Vorgabe Dozent) |
+| Ziel-Leistung | 0,25 W |
+| Widerstand | ca. 44 Ω (P = U² / R), Strom ca. 76 mA |
+| Draht | lackiert, z. B. Konstantan oder Nichrom 0,05 mm; Länge aus Ω/m des Datenblatts berechnen, etwas länger schneiden und mit dem Multimeter kürzen |
+| Schalten | über MOSFET, nicht direkt vom Pin |
+
+**Einbau:**
+1. Dünne Schicht nicht leitende Wärmeleitpaste (Silikon oder Keramik, kein Metall) auf das Glas.
+2. Draht eng hineinwickeln.
+3. Dünne Schicht Paste über die Wicklung.
+4. Drahtenden mit 2-Komponenten-Epoxid oder Kaptonband fixieren. Die Paste hält den Draht nicht.
+
+Paste nur im Heizerbereich auftragen, damit keine Wärme zu den Sensoren wandert. Kein Heißkleber, er wird bei ca. 100 °C weich.
+
+**Wichtig:** Den Heizer nie ohne Durchfluss oder bei trockenem Rohr einschalten, sonst wird er zu heiß.
+
+**Offen:** Kann die 3,3-V-Versorgung dauerhaft ca. 80 mA für den Heizer liefern?
 
 ## Sensorspezifikation: TMP1075
 
