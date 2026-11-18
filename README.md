@@ -9,7 +9,7 @@ Wir entwickeln das **thermische Messmodul** für eine modulare Sensorplattform: 
 - **Ziel:** Den Durchfluss in einer dünnen Glaskapillare messen, auch ohne Luftblasen im Wasser.
 - **Prinzip:** Ein Heizer erwärmt das Wasser leicht (ca. 1 K). Ein Temperatursensor vor und einer nach dem Heizer messen die Temperatur außen am Rohr. Aus der Temperaturdifferenz folgt der Durchfluss, abgeglichen mit einer Waage.
 - **Aufbau:** Ein Stapel runder Leiterplatten-Scheiben auf dem Rohr. Die Sensoren sitzen außen auf den Endscheiben, in der Mitte sitzt der Heizer (Widerstandsdraht).
-- **Sensoren:** Digitale Temperatursensoren über I²C (**TMP1075**, Entscheidung 2026-10-29). Eine IMU ist nicht nötig, weil Erschütterungen die Temperaturmessung nicht beeinflussen.
+- **Sensoren:** NTC-Thermistoren in einem Schmitt-Trigger-Oszillator (**SN74LVC2G14**). Die Frequenz des Rechtecksignals folgt der Temperatur, das FPGA zählt sie. Keine digitalen I²C-Temperatursensoren und kein ADC. Eine IMU ist nicht nötig, weil Erschütterungen die Temperaturmessung nicht beeinflussen.
 - **Stand:** Entwurf. Viele Punkte sind noch offen, siehe Lastenheft.
 
 ## Skizzen
@@ -69,25 +69,31 @@ Paste nur im Heizerbereich auftragen, damit keine Wärme zu den Sensoren wandert
 
 **Offen:** Kann die 3,3-V-Versorgung dauerhaft ca. 80 mA für den Heizer liefern?
 
-## Sensorspezifikation: TMP1075
+## Temperaturmessung: NTC und Schmitt-Trigger
 
-Ausgewählter Temperatursensor für alle thermischen Messkanäle (Entscheidung 2026-10-29, vor MCP9808 und TMP117 gewählt).
+**Prinzip:** Ein NTC-Thermistor (sein Widerstand sinkt mit steigender Temperatur) bestimmt als Widerstand die Frequenz eines Schmitt-Trigger-Oszillators. Die Temperatur steckt damit in der Frequenz des Rechtecksignals. Das FPGA zählt die Flanken über den PMOD-Anschluss. Dafür braucht es weder einen ADC noch I²C-Temperatursensoren.
 
-| Parameter | Wert |
+**Funktionsweise:**
+- Der Ausgang Y des Inverters geht über den Widerstand (später der NTC) zurück auf den Eingang A. Ein Kondensator liegt zwischen A und GND.
+- Der Kondensator lädt und entlädt sich über den Widerstand. Der Chip kippt an seinen zwei Schwellen und erzeugt so ein Rechtecksignal.
+- Die Frequenz hängt von Widerstand und Kondensator ab (f ≈ k / (R · C)). Ändert sich der NTC-Widerstand, ändert sich die Frequenz.
+- Der Chip enthält zwei Inverter: Der erste ist der Oszillator, der zweite dahinter dient als Puffer, damit das Signal sauber bleibt und Leitung und FPGA den Oszillator nicht belasten.
+
+| Größe | Wert |
 |---|---|
-| Hersteller | Texas Instruments |
-| Interface | I²C |
-| Versorgungsspannung | 1,7–5,5 V (passt zu unserer 3,3-V-Plattformversorgung) |
-| Auflösung | 12 Bit, 0,0625 °C pro LSB |
-| Genauigkeit | ±1 °C typ. (±2 °C max. über den vollen Bereich) |
-| Wandlungszeit | ca. 27,5 ms |
-| I²C-Adressierung | 3 Adresspins → bis zu 8 Geräte an einem Bus |
-| Gehäuse | sehr klein (z. B. SOT-563), gut für die Scheiben geeignet |
-| Preis | niedrig (günstigster der verglichenen Kandidaten) |
+| Bauteil | SN74LVC2G14 (Texas Instruments), doppelter Schmitt-Trigger-Inverter (Oszillator und Puffer in einem Gehäuse) |
+| Datenblatt | [`docs/datasheets/SN74LVC2G14_Doppel-Schmitt-Trigger_Datenblatt.pdf`](docs/datasheets/SN74LVC2G14_Doppel-Schmitt-Trigger_Datenblatt.pdf) |
+| Versorgung | 3,3 V, dazu 100 nF und 1 µF parallel direkt am VCC-Pin |
+| Gehäuse | SOT-23 mit 6 Pins (DBV): Pin 1 1A (Eingang Oszillator), 2 GND, 3 2A (Eingang Puffer), 4 2Y (Ausgang Puffer), 5 VCC, 6 1Y (Ausgang Oszillator) |
+| Schwellen bei 3 V | VT+ 1,3 bis 2,2 V, VT− 0,6 bis 1,3 V (Datenblatt, großer Streubereich, jeder Kanal wird kalibriert) |
+| Frequenz | unter 20 MHz (Grenze des Projekts) |
+| NTC | 10 kΩ, Typ und Gehäuse (SMD 0603 oder Glasperle) noch offen |
+| Kanäle | 6, je ein Chip pro Sensor |
+| Widerstände und Kondensatoren | Bauform 0805 |
 
-**Begründung:** Von den verglichenen Kandidaten (TMP1075, MCP9808, TMP117) bietet TMP1075 die geringste Genauigkeit und Auflösung, dafür aber bis zu 8 Adressen pro Bus (TMP117 nur 4), niedrigen Preis und ausreichend kleine Bauform für den Scheibenstapel. Da ca. 5 Temperaturkanäle + Referenz/Umgebung auf einem I²C-Bus Platz finden müssen, war die Adressanzahl ausschlaggebend gegenüber der höheren Präzision von MCP9808/TMP117.
+**Kalibrierung:** Die Zuordnung von Frequenz zu Temperatur wird bei bekannten Temperaturen gemessen und danach im FPGA per Software angewendet.
 
-**Zu prüfen / offen:** Ob ±1 °C (±2 °C worst case) Genauigkeit ausreicht, um eine Temperaturdifferenz von nur ca. 1 K entlang der Messstrecke aufzulösen — ggf. Kalibrierung der einzelnen Sensoren gegeneinander nötig, um den systematischen Offset-Fehler herauszurechnen (relative Messung zwischen Sensoren ist genauer als die absolute Genauigkeit).
+**Offen:** NTC-Typ, Konstante k der Frequenzformel (aus dem Datenblatt oder durch Messung), Wert des Kondensators, ob ein Filterkondensator nötig ist.
 
 ## Gruppe
 
@@ -99,11 +105,11 @@ Ausgewählter Temperatursensor für alle thermischen Messkanäle (Entscheidung 2
 
 | Ordner | Inhalt |
 |---|---|
-| `docs/` | Lastenheft, Zusammenfassungen, Präsentationen (am besten als PDF), Skizzen in `docs/abbildungen/` |
+| `docs/` | Lastenheft, Zusammenfassungen, Präsentationen (am besten als PDF), Skizzen in `docs/abbildungen/`, Datenblätter in `docs/datasheets/` |
 | `3D/` | 3D .STL / .STEP Datei |
 | `hardware/` | Schaltpläne, PCB-Exporte (PDF, Gerber), Stückliste |
 | `measurements/` | Messdaten, Fotos, Diagramme |
-| `research/` | Notizen zu Sensoren, ADC, Heizer und thermischen Durchflussmessern in der Industrie |
+| `research/` | Notizen zu Sensoren, Heizer und thermischen Durchflussmessern in der Industrie |
 
 ## Arbeitsregeln
 

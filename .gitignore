@@ -12,3 +12,8 @@ personal_token.ini
 # Python
 __pycache__/
 *.pyc
+
+# LTspice: generated files (recreated at every simulation run)
+Simulation/**/*.raw
+Simulation/**/*.log
+Simulation/**/*.db
